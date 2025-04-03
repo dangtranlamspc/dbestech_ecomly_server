@@ -21,7 +21,7 @@ exports.getUserById = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    return res.json(user);
+    return res.json(user.toJSON);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ type: error.name, message: error.message });

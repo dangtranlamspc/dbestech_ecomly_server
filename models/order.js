@@ -1,6 +1,7 @@
 const { Schema, model } = require("mongoose");
 
 const orderSchema = Schema({
+  orderItems: [{type: Schema.Types.ObjectId, ref : 'OrderItem', require: true}] ,
   shippingAddress: { type: String, require: true },
   city: { type: String, require: true },
   postalCode: String,
@@ -22,6 +23,27 @@ const orderSchema = Schema({
       "expired",
     ],
   },
+  statusHistory : {
+    type : [String],
+    enum: [
+      "pending",
+      "processed",
+      "shipped",
+      "out-for-delivery",
+      "delivered",
+      "cancelled",
+      "on-hold",
+      "expired",
+    ],
+    require: true,
+    default : ['pending'],
+  },
+  totalPrice : Number,
+  user: {type: Schema.Types.ObjectId, ref: 'User'},
+  dateOrdered: {type: Date, default: Date.now},
 });
 
-exports.Order = model("Order", orderSchema);
+orderSchema.set('toObject', {virtuals: true});
+orderSchema.set('toJSON', {virtuals: true});
+
+exports.Order = model('Order', orderSchema);
