@@ -28,6 +28,7 @@ const adminRoute = require('./routes/admin');
 app.use(`${API}/`,authRoute);
 app.use(`${API}/users`, userRoute);
 app.use(`${API}/admin`, adminRoute);
+app.use(`/public`, express.static(__dirname + '/public'));
 
 
 

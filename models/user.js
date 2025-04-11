@@ -13,6 +13,7 @@ const userSchema = new Schema({
     isAdmin: { type: Boolean, default: false },
     resetPasswordOtp : Number,
     resetPasswordOtpExpire : Date,
+    cart: [{type: Schema.Types.ObjectId, ref : 'CartProduct'}],
     wishList: [
         {
             productId : {type : Schema.Types.ObjectId, ref : 'Product'},
