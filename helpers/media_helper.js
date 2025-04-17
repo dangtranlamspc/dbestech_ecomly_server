@@ -37,7 +37,7 @@ exports.upload = multer({
   },
 });
 
-exports.deleteImage = async function (imageUrls, continueOnErrorName) {
+exports.deleteImages = async function (imageUrls, continueOnErrorName) {
   await Promise.all(
     imageUrls.map(async (imageUrl) => {
       const imagePath = path.resolve(

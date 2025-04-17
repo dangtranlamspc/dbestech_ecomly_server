@@ -23,25 +23,26 @@ app.use(authJwt());
 const authRoute = require('./routes/auth');
 const userRoute = require('./routes/users');
 const adminRoute = require('./routes/admin');
+const categoryRoute = require('./routes/categories');
+const productsRoute = require('./routes/products');
 
 
 app.use(`${API}/`,authRoute);
 app.use(`${API}/users`, userRoute);
 app.use(`${API}/admin`, adminRoute);
+app.use(`${API}/categories`, categoryRoute);
+app.use(`${API}/products`, productsRoute);
 app.use(`/public`, express.static(__dirname + '/public'));
-
-
-
-mongoose.connect(env.MOONGO_CONNECTION_STRING).then(() => {
-    console.log('Connected to MongoDB');
-}).catch((error) => {
-    console.error(error);
-});
 
 const hostname = env.HOSTNAME;
 const port = env.PORT;
+require('./helpers/cron_job');
 
-console.log("hostname: ", hostname);
+mongoose.connect(env.MOONGO_CONNECTION_STRING).then(() => {
+    console.log('Connected to Database');
+}).catch((error) => {
+    console.error(error);
+});
 
 app.listen(port, hostname, () => {
     console.log(`Server is running at http://${hostname}:${port}/`);

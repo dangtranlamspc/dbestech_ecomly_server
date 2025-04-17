@@ -5,7 +5,7 @@ const Category = require("../../models/category");
 exports.addCategory = async function (req, res) {
   try {
     const uploadImage = util.promisify(
-      media_helper.upload.fields([{ name: "image", maxCount: 1 }])
+      media_helper.upload.fields([{ name: 'image', maxCount: 1 }])
     );
     try {
       await uploadImage(req, res);
@@ -18,9 +18,9 @@ exports.addCategory = async function (req, res) {
       });
     }
 
-    const image = req.files["image"][0];
+    const image = req.files['image'][0];
     if (!image) return res.status(404).json({ message: "No image uploaded" });
-    req.body["image"] = `${req.protocol}://${req.get("host")}/${image.path}`;
+    req.body['image'] = `${req.protocol}://${req.get('host')}/${image.path}`;
     let category = new Category(req.body);
     category = category.save();
     if (!category)

@@ -8,7 +8,7 @@ const productSchema = Schema({
   colours: [{ type: String }],
   image: { type: String, require: true },
   images: [{ type: String }],
-  reviews: [{ type: Schema.Types.ObjectId, ref: "Review" }],
+  reviews: [{ type: Schema.Types.ObjectId, ref: 'Review' }],
   numberOfReview: { type: Number, default: 0 },
   sizes: [{ type: String }],
   category: { type: Schema.Types.ObjectId, ref: "Category", require: true },
@@ -17,25 +17,28 @@ const productSchema = Schema({
   dateAdded: { type: Date, default: Date.now },
 });
 
-productSchema.pre('save', async function (next) {
-    if (this.reviews.length > 0) {
-        await this.populate('reviews');
+productSchema.pre("save", async function (next) {
+  if (this.reviews.length > 0) {
+    await this.populate("reviews");
 
-        const totalRating = this.reviews.reduce((acc, review) => acc + review.rating, 0);
-        this.rating = totalRating / this.reviews.length;
-        this.rating = parseFloat((totalRating / this.reviews.length).toFixed(1));
-        this.numberOfReview = this.reviews.length;
-    }
-    next();
+    const totalRating = this.reviews.reduce(
+      (acc, review) => acc + review.rating,
+      0
+    );
+    this.rating = totalRating / this.reviews.length;
+    this.rating = parseFloat((totalRating / this.reviews.length).toFixed(1));
+    this.numberOfReview = this.reviews.length;
+  }
+  next();
 });
 
-productSchema.index({name : 'text', description : 'text'});
+productSchema.index({ name: "text", description: "text" });
 
-productSchema.virtual('productInitial').get(function () {
-    return this.firstBit + this.secondBit;
-});
+// productSchema.virtual("productInitial").get(function () {
+//   return this.firstBit + this.secondBit;
+// });
 
-productSchema.set('toObject', {virtuals: true});
-productSchema.set('toJSON', {virtuals: true});
+productSchema.set("toObject", { virtuals: true });
+productSchema.set("toJSON", { virtuals: true });
 
 exports.Product = model("Product", productSchema);
