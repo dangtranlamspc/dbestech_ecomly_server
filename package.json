@@ -25,6 +25,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.10.0",
     "nodemon": "^3.1.9",
+    "stripe": "^18.0.0",
     "util": "^0.12.5"
   }
 }

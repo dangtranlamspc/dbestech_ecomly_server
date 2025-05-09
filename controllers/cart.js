@@ -132,7 +132,11 @@ exports.addToCart = async function (req, res) {
       res.status(404).json({ message: "Product not found" });
     }
     if (existingCartItem) {
-      if (product.countInStock >= existingCartItem.quantity + 1) {
+      let condition = product.countInStock >= existingCartItem.quantity + 1;
+      if (existingCartItem.reserved) {
+        condition = product.countInStock >= 1;
+      }
+      if (condition) {
         existingCartItem.quantity += 1;
         await existingCartItem.save({ session });
 
@@ -167,6 +171,28 @@ exports.addToCart = async function (req, res) {
     }
     user.cart.push(cartProduct.id);
     await user.save({ session });
+
+    const updatedProduct = await Product.findOneAndUpdate(
+      {
+        _id: productId,
+        countInStock: { $gte: cartProduct.quantity },
+      },
+      {
+        $inc: { countInStock: -cartProduct.quantity },
+      },
+      {
+        new: true,
+        session,
+      }
+    );
+    if (!updatedProduct) {
+      await session.abortTransaction();
+      return res
+        .status(400)
+        .json({ message: "Insufficient stock or concurrency issue" });
+    }
+    await session.commitTransaction();
+    return res.status(200).json(cartProduct);
   } catch (error) {
     console.log(error);
     await session.abortTransaction();
@@ -178,6 +204,38 @@ exports.addToCart = async function (req, res) {
 
 exports.mofifyProductQuantity = async function (req, res) {
   try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const { quantity } = req.body;
+    let cartProduct = await CartProduct.findById(req.params.cartProductId);
+    if (!cartProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const actualProduct = await Product.findById(cartProduct.product);
+    if (!actualProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    if (quantity > actualProduct.countInStock) {
+      return res
+        .status(400)
+        .json({ message: "Insufficient stock for the requested quantity" });
+    }
+
+    cartProduct = await CartProduct.findByIdAndUpdate(
+      req.params.cartProductId,
+      quantity,
+      { new: true }
+    );
+
+    if (!cartProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    return res.json(cartProduct);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ type: error.name, message: error.message });
@@ -185,9 +243,64 @@ exports.mofifyProductQuantity = async function (req, res) {
 };
 
 exports.removeFromCart = async function (req, res) {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user.cart.includes(req.params.cartProductId)) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: "Product not found in cart" });
+    }
+
+    const cartItemToRemove = await CartProduct.findById(
+      req.params.cartProductId
+    );
+    if (!cartItemToRemove) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: "Cart Item not found" });
+    }
+
+    if (cartItemToRemove.reserved) {
+      const updatedProduct = await Product.findOneAndUpdate(
+        {
+          _id: cartItemToRemove.product,
+        },
+        {
+          $inc: { countInStock: cartItemToRemove.quantity },
+        },
+        {
+          new: true,
+          session,
+        }
+      );
+      if (!updatedProduct) {
+        await session.abortTransaction();
+        return res
+          .status(500)
+          .json({ message: "Internal server Error" });
+      }
+    }
+
+    user.cart.pull(cartItemToRemove.id);
+    await user.save({ session });
+    const cartProduct = await CartProduct.findByIdAndUpdate(cartItemToRemove.id).session(session);
+
+    if (!cartProduct) {
+      await session.abortTransaction();
+      return res.status(500).json({ message: "Internal server Error" });
+    }
+    await session.commitTransaction();
+    return res.status(204).end();
   } catch (error) {
     console.log(error);
+    await session.abortTransaction();
     return res.status(500).json({ type: error.name, message: error.message });
+  } finally {
+    await session.endSession();
   }
 };
